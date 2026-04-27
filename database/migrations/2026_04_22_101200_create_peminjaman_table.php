@@ -28,6 +28,8 @@ return new class extends Migration
             $table->date('TanggalPengembalian');
             $table->string('StatusPeminjaman', 50);
             $table->timestamps();
+
+            $table->enum('Kondisi', ['Baik', 'Rusak', 'Hilang'])->nullable();
         });
     }
 
