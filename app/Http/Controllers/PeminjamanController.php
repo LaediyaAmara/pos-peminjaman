@@ -99,27 +99,32 @@ class PeminjamanController extends Controller
     }
 
     // Fungsi untuk Halaman Jelajah Buku Siswa (Peminjam)
-    public function koleksiPeminjam(Request $request, $kategori_id = null)
-    {
-        $search = $request->input('search');
-        $kategoris = KategoriBuku::all(); // Pastikan modelnya benar
+   public function pinjam(Request $request, $kategori_id = null)
+{
+    // 1. Tangkap input search dari user
+    $search = $request->input('search');
 
-        $bukus = Buku::with('kategori')
-            ->when($kategori_id, function ($query, $kategori_id) {
-                return $query->where('KategoriID', $kategori_id);
-            })
-            ->when($search, function ($query, $search) {
-                // Gunakan grouping agar orWhere tidak merusak filter kategori
-                return $query->where(function($q) use ($search) {
-                    $q->where('Judul', 'like', "%{$search}%")
-                      ->orWhere('Penulis', 'like', "%{$search}%");
-                });
-            })
-            ->get();
+    // 2. Query dasar buku (beserta relasi kategori)
+    $query = Buku::with('kategori');
 
-        return view('peminjam.pinjam', compact('bukus', 'kategoris', 'kategori_id'));
+    // 3. Logika Filter Kategori (Jika ada kategori yang diklik)
+    if ($kategori_id) {
+        $query->where('KategoriID', $kategori_id);
     }
 
+    // 4. LOGIKA PENCARIAN (Tambahan agar search berfungsi)
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('Judul', 'LIKE', "%{$search}%")
+              ->orWhere('Penulis', 'LIKE', "%{$search}%");
+        });
+    }
+
+    $bukus = $query->latest()->get();
+    $kategoris = KategoriBuku::all();
+
+    return view('peminjam.pinjam', compact('bukus', 'kategoris', 'kategori_id'));
+}
     public function laporan()
     {
         $peminjamans = Peminjaman::with(['user', 'buku'])->latest()->get();

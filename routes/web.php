@@ -14,7 +14,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/manajemen-user/{id}', [UserController::class, 'destroy'])->name('user.destroy');
 });
 
-
+// Jika kamu menggunakan Resource Controller
+Route::get('/manajemen-user', [App\Http\Controllers\UserController::class, 'index'])->name('user.index');
 
 Route::post('/pinjam-buku', [PeminjamanController::class, 'store'])
     ->name('peminjaman.store')

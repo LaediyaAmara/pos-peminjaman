@@ -31,8 +31,8 @@
                                 <th class="border border-gray-300 px-4 py-4">Informasi Peminjam</th>
                                 <th class="border border-gray-300 px-4 py-4">Detail Buku</th>
                                 <th class="border border-gray-300 px-4 py-4 text-center">Tgl Pinjam</th>
-                                <th class="border border-gray-300 px-4 py-4 text-center">Deadline</th>
-                                <th class="border border-gray-300 px-4 py-4 text-center">Status Transaksi</th>
+                                <th class="border border-gray-300 px-4 py-4 text-center">Tgl Kembali</th> {{-- Ubah Header agar lebih umum --}}
+                                <th class="border border-gray-300 px-4 py-4 text-center">Status & Kondisi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -46,11 +46,18 @@
                                 <td class="border border-gray-300 px-4 py-4">
                                     <span class="font-semibold text-indigo-700">{{ $p->buku->Judul }}</span>
                                 </td>
-                                <td class="border border-gray-300 px-4 py-4 text-center">
+                                <td class="border border-gray-300 px-4 py-4 text-center whitespace-nowrap">
                                     {{ \Carbon\Carbon::parse($p->TanggalPeminjaman)->format('d/m/Y') }}
+                                    <div class="text-[10px] text-gray-400 font-medium italic">{{ \Carbon\Carbon::parse($p->TanggalPeminjaman)->format('H:i') }} WIB</div>
                                 </td>
-                                <td class="border border-gray-300 px-4 py-4 text-center">
-                                    {{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('d/m/Y') }}
+                                <td class="border border-gray-300 px-4 py-4 text-center whitespace-nowrap">
+                                    @if($p->StatusPeminjaman == 'Kembali')
+                                        {{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('d/m/Y') }}
+                                        <div class="text-[10px] text-emerald-500 font-medium italic">{{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('H:i') }} WIB</div>
+                                    @else
+                                        {{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('d/m/Y') }}
+                                        <div class="text-[10px] text-amber-500 font-bold uppercase tracking-tighter">Estimasi</div>
+                                    @endif
                                 </td>
                                 <td class="border border-gray-300 px-4 py-4 text-center">
                                     @php
@@ -58,17 +65,23 @@
                                         $isTerlambat = now()->gt($deadline) && $p->StatusPeminjaman == 'Dipinjam';
                                     @endphp
 
-                                    @if($isTerlambat)
-                                        <div class="flex flex-col items-center">
-                                            <span class="text-red-600 font-black text-xs uppercase tracking-tighter">⚠️ TERLAMBAT</span>
-                                            <small class="text-[10px] text-red-400 italic">Harus segera dikembalikan</small>
-                                        </div>
-                                    @else
-                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider
-                                            {{ $p->StatusPeminjaman == 'Dipinjam' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700' }}">
-                                            {{ $p->StatusPeminjaman }}
-                                        </span>
-                                    @endif
+                                    <div class="flex flex-col items-center gap-1">
+                                        @if($isTerlambat)
+                                            <span class="text-red-600 font-black text-[10px] uppercase tracking-tighter">⚠️ TERLAMBAT</span>
+                                        @else
+                                            <span class="px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider
+                                                {{ $p->StatusPeminjaman == 'Dipinjam' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700' }}">
+                                                {{ $p->StatusPeminjaman }}
+                                            </span>
+                                        @endif
+
+                                        {{-- Tambahan Kondisi Barang --}}
+                                        @if($p->StatusPeminjaman == 'Kembali')
+                                            <span class="text-[10px] font-bold uppercase {{ $p->Kondisi == 'Baik' ? 'text-emerald-600' : ($p->Kondisi == 'Rusak' ? 'text-amber-600' : 'text-rose-600') }}">
+                                                Kondisi: {{ $p->Kondisi }}
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                             @empty
@@ -85,11 +98,11 @@
                     <div class="hidden print:grid grid-cols-2 mt-16 text-gray-800">
                         <div></div>
                         <div class="text-center">
-                            <p class="mb-1 text-sm">Bandung, {{ now()->format('d F Y') }}</p>
+                            <p class="mb-1 text-sm">Tarogong Kaler, {{ now()->format('d F Y') }}</p>
                             <p class="font-semibold">Kepala Perpustakaan,</p>
                             <div class="h-24"></div> {{-- Ruang untuk tanda tangan --}}
                             <p class="font-bold underline text-lg">( {{ auth()->user()->NamaLengkap }} )</p>
-                            <p class="text-xs uppercase tracking-widest text-gray-500">NIP. 19820311 200501 1 002</p>
+                            <p class="text-xs uppercase tracking-widest text-gray-500">Petugas Perpustakaan Digital</p>
                         </div>
                     </div>
                 </div>
@@ -99,38 +112,13 @@
 
     <style>
         @media print {
-            /* Sembunyikan Navigasi, Header, dan Tombol */
-            nav, button, header, .header-shadow {
-                display: none !important;
-            }
-            /* Reset Background & Padding */
-            body, .py-12, .bg-gray-50 {
-                background: white !important;
-                padding-top: 0 !important;
-            }
-            .shadow-xl {
-                box-shadow: none !important;
-            }
-            /* Optimasi Tabel */
-            table {
-                width: 100% !important;
-                border: 2px solid black !important;
-                color: black !important;
-            }
-            th {
-                background-color: #f3f4f6 !important; /* Abu-abu terang */
-                color: black !important;
-                border: 1px solid black !important;
-            }
-            td {
-                border: 1px solid black !important;
-                color: black !important;
-            }
-            /* Paksa browser mencetak warna */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
+            nav, button, header, .header-shadow { display: none !important; }
+            body, .py-12, .bg-gray-50 { background: white !important; padding-top: 0 !important; }
+            .shadow-xl { box-shadow: none !important; }
+            table { width: 100% !important; border: 2px solid black !important; color: black !important; }
+            th { background-color: #f3f4f6 !important; color: black !important; border: 1px solid black !important; }
+            td { border: 1px solid black !important; color: black !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
 </x-app-layout>

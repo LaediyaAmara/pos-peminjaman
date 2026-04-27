@@ -9,25 +9,7 @@ class BukuController extends Controller
 {
     /**
      * Display a listing of the resource.
-     */
-    public function index()
-    {
-        $bukus = \App\Models\Buku::all(); // Ambil semua data buku
-    return view('buku.index', compact('bukus')); // Kirim ke tampilan
-    // 1. Ambil kata kunci dari input search
-    $search = $request->input('search');
-
-    // 2. Query buku dengan relasi kategori
-    $bukus = Buku::with('kategori')
-        ->when($search, function ($query, $search) {
-            return $query->where('Judul', 'like', "%{$search}%")
-                         ->orWhere('Penulis', 'like', "%{$search}%");
-        })
-        ->get();
-
-    // 3. Kirim data ke view
-    return view('buku.index', compact('bukus'));
-    }
+    
 
     /**
      * Show the form for creating a new resource.
@@ -109,5 +91,27 @@ class BukuController extends Controller
     $buku->delete();
 
     return redirect()->route('buku.index')->with('success', 'Buku berhasil dihapus!');
+}
+public function index(Request $request)
+{
+    // 1. Ambil kata kunci dari input search
+    $search = $request->input('search');
+
+    // 2. Query dasar dengan relasi kategori
+    $query = Buku::with('kategori');
+
+    // 3. Jika ada kata kunci, lakukan filter
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('Judul', 'LIKE', "%{$search}%")
+              ->orWhere('Penulis', 'LIKE', "%{$search}%")
+              ->orWhere('Penerbit', 'LIKE', "%{$search}%");
+        });
+    }
+
+    // 4. Ambil data (tambahkan paginate jika perlu agar lebih rapi)
+    $bukus = $query->latest()->get();
+
+    return view('buku.index', compact('bukus'));
 }
 }

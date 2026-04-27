@@ -24,8 +24,9 @@ return new class extends Migration
                   ->constrained('bukus', 'BukuID')
                   ->onDelete('cascade');
 
-            $table->date('TanggalPeminjaman');
-            $table->date('TanggalPengembalian');
+            // GUNAKAN dateTime atau timestamps, JANGAN date
+            $table->dateTime('TanggalPeminjaman'); 
+            $table->dateTime('TanggalPengembalian')->nullable();
             $table->string('StatusPeminjaman', 50);
             $table->timestamps();
 

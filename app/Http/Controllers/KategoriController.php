@@ -84,39 +84,33 @@ public function update(Request $request, $id)
 
 public function koleksiPeminjam(Request $request, $kategori_id = null)
 {
+    // 1. Ambil input search dari request
+    $search = $request->input('search');
+
+    // 2. Ambil semua kategori untuk navigasi tombol filter di view
+    // Gunakan KategoriBuku atau Kategori sesuai nama Model kamu (di sini saya samakan dengan kode kamu)
     $kategoris = \App\Models\KategoriBuku::all();
-    
+
+    // 3. Bangun Query Buku dengan relasi kategori
+    $query = \App\Models\Buku::with('kategori');
+
+    // 4. JIKA ada kategori yang diklik/dipilih
     if ($kategori_id) {
-        $kategoriTerpilih = \App\Models\KategoriBuku::with('bukus')->findOrFail($kategori_id);
-        $bukus = $kategoriTerpilih->bukus;
-    } else {
-        $bukus = \App\Models\Buku::all();
+        $query->where('KategoriID', $kategori_id);
     }
 
-    return view('peminjam.pinjam', compact('kategoris', 'bukus', 'kategori_id'));
-// 1. Ambil kata kunci pencarian
-    $search = $request->input('search');
-    
-    // 2. Ambil semua kategori untuk navigasi tombol
-    $kategoris = \App\Models\KategoriBuku::all();
+    // 5. JIKA ada kata kunci pencarian (FITUR SEARCH)
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('Judul', 'LIKE', "%{$search}%")
+              ->orWhere('Penulis', 'LIKE', "%{$search}%");
+        });
+    }
 
-    // 3. Gabungkan logika filter kategori DAN search dalam satu query
-    $bukus = \App\Models\Buku::with('kategori')
-        // Jika ada kategori yang dipilih, filter berdasarkan KategoriID
-        ->when($kategori_id, function ($query, $kategori_id) {
-            return $query->where('KategoriID', $kategori_id);
-        })
-        // Jika ada pencarian, filter berdasarkan Judul atau Penulis
-        ->when($search, function ($query, $search) {
-            return $query->where(function($q) use ($search) {
-                $q->where('Judul', 'like', "%{$search}%")
-                  ->orWhere('Penulis', 'like', "%{$search}%");
-            });
-        })
-        ->get();
+    // 6. Eksekusi query (Urutkan dari yang terbaru)
+    $bukus = $query->latest()->get();
 
-    // 4. Kirim semua data ke SATU view saja (peminjaman.create)
-    return view('peminjaman.create', compact('bukus', 'kategoris', 'kategori_id'));
+    // 7. Kirim data ke view peminjam.pinjam
+    return view('peminjam.pinjam', compact('bukus', 'kategoris', 'kategori_id'));
 }
-
 }
