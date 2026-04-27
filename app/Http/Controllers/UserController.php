@@ -2,51 +2,87 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User; // Pastikan baris ini ada
+use App\Models\User;
+use App\Models\Peminjaman; 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash; 
 
 class UserController extends Controller
 {
+    // 1. Menampilkan Daftar Anggota
     public function index()
     {
-        // Mengambil user dengan role peminjam (Siswa)
-        $members = User::where('role', 'peminjam')->get();
+        $members = User::where('role', 'peminjam')->latest()->get();
         return view('user.index', compact('members'));
     }
 
-    public function destroy($id)
-{
-    $user = \App\Models\User::findOrFail($id);
+    // 2. MENAMPILKAN FORM TAMBAH (Fungsi yang hilang dan bikin error)
+    public function create()
+    {
+        return view('user.create');
+    }
 
-    // 1. Hapus dulu semua data di tabel peminjaman yang terkait dengan user ini
-    \App\Models\Peminjaman::where('UserID', $id)->delete();
-
-    // 2. Baru hapus usernya
-    $user->delete();
-
-    return back()->with('success', 'Member dan seluruh riwayat pinjamannya berhasil dihapus!');
-}
-public function store(Request $request)
+    // 3. Menyimpan Anggota Baru
+    public function store(Request $request)
 {
     $request->validate([
-        'Username' => 'required|unique:users,Username',
-        'Email' => 'required|email|unique:users,Email',
-        'NamaLengkap' => 'required',
-        'Password' => 'required|min:6',
-        'Alamat' => 'required',
+        'NamaLengkap' => 'required|string|max:255',
+        'Username'    => 'required|string|unique:users,Username',
+        'email'       => 'required|email|unique:users,email',
+        'password'    => 'required|min:8',
     ]);
 
-    \App\Models\User::create([
-        'Username' => $request->Username,
-        'Email' => $request->Email,
+    User::create([
         'NamaLengkap' => $request->NamaLengkap,
-        'Password' => bcrypt($request->Password),
-        'Alamat' => $request->Alamat,
-        'role' => 'peminjam', // Otomatis jadi peminjam/anggota
+        'Username'    => $request->Username,
+        'email'       => $request->email,
+        'password'    => Hash::make($request->password), 
+        'role'        => 'peminjam',
+        'Alamat'      => '-', // Tambahkan ini agar database tidak error
     ]);
 
-    return redirect()->back()->with('success', 'Anggota berhasil ditambahkan!');
+    return redirect()->route('user.index')->with('success', 'Anggota berhasil ditambahkan!');
 }
 
+    // 4. Menampilkan Form Edit
+    public function edit($id)
+    {
+        $user = User::findOrFail($id);
+        return view('user.edit', compact('user'));
+    }
 
+    // 5. Update Data Anggota
+    public function update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        
+        $request->validate([
+            'NamaLengkap' => 'required|string|max:255',
+            'email'       => 'required|email|unique:users,email,'.$id,
+        ]);
+
+        $user->NamaLengkap = $request->NamaLengkap;
+        $user->email = $request->email;
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return redirect()->route('user.index')->with('success', 'Profil anggota berhasil diperbarui!');
+    }
+
+    // 6. Hapus Anggota
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Hapus riwayat pinjam dulu agar tidak error Foreign Key
+        Peminjaman::where('UserID', $id)->delete();
+
+        $user->delete();
+
+        return redirect()->route('user.index')->with('success', 'Member dan riwayatnya berhasil dihapus!');
+    }
 }

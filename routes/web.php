@@ -9,8 +9,11 @@ use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\UserController; // Pastikan import Controller-nya di atas
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    // Route untuk halaman Manajemen Member
     Route::get('/manajemen-user', [UserController::class, 'index'])->name('user.index');
+    Route::get('/manajemen-user/tambah', [UserController::class, 'create'])->name('user.create');
+    Route::post('/manajemen-user/simpan', [UserController::class, 'store'])->name('user.store');
+    Route::get('/manajemen-user/{id}/edit', [UserController::class, 'edit'])->name('user.edit');
+    Route::put('/manajemen-user/{id}/update', [UserController::class, 'update'])->name('user.update');
     Route::delete('/manajemen-user/{id}', [UserController::class, 'destroy'])->name('user.destroy');
 });
 
