@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Peminjaman extends Model
 {
@@ -45,5 +46,18 @@ protected $casts = [
 {
     return $this->hasOne(Denda::class, 'PeminjamanID', 'PeminjamanID');
 }
+protected function getTanggalPeminjamanAttribute($value)
+    {
+        return Carbon::parse($value)->translatedFormat('l, d F Y');
+    }
+
+    /**
+     * Otomatis ubah format Tanggal Pengembalian ke Bahasa Indonesia
+     */
+    protected function getTanggalPengembalianAttribute($value)
+    {
+        if (!$value) return null;
+        return Carbon::parse($value)->translatedFormat('l, d F Y');
+    }
 
 }

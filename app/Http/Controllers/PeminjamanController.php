@@ -162,19 +162,28 @@ class PeminjamanController extends Controller
 {
     $query = Peminjaman::with(['user', 'buku', 'denda']);
 
-    // Filter berdasarkan Tanggal Peminjaman
+    // Filter Tanggal
     if ($request->tgl_mulai && $request->tgl_selesai) {
         $query->whereBetween('TanggalPeminjaman', [$request->tgl_mulai, $request->tgl_selesai]);
     }
 
-    // Filter berdasarkan Status
-    if ($request->status) {
-        $query->where('StatusPeminjaman', $request->status);
+    // Filter Nama
+    if ($request->peminjam) {
+        $query->whereHas('user', function($q) use ($request) {
+            $q->where('NamaLengkap', 'like', "%" . $request->peminjam . "%");
+        });
     }
 
+    // Ambil data hasil filter
     $peminjamans = $query->latest()->get();
 
-    return view('peminjaman.laporan', compact('peminjamans'));
+    // HITUNG TOTAL DENDA KHUSUS HASIL FILTER
+    // Kita gunakan flatMap untuk mengambil semua model denda, lalu kita jumlahkan kolom JumlahDenda
+    $totalDenda = $peminjamans->map(function ($p) {
+        return $p->denda ? $p->denda->JumlahDenda : 0;
+    })->sum();
+
+    return view('peminjaman.laporan', compact('peminjamans', 'totalDenda'));
 }
 
 // Tampilan Daftar Denda untuk Admin

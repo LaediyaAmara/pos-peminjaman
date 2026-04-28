@@ -18,6 +18,10 @@
             <span class="mr-3">🔄</span> Log Peminjaman
         </a>
         
+        <a href="{{ route('denda.index') }}" class="flex items-center px-4 py-3 rounded-2xl hover:bg-white/10 transition-all text-indigo-100 mb-1 {{ request()->routeIs('denda.*') ? 'bg-white/10 text-white border-l-4 border-indigo-400' : '' }}">
+            <span class="mr-3">📖</span> Denda 
+        </a>
+
         @if(auth()->user()->role == 'admin')
         <a href="{{ route('kategori.index') }}" class="flex items-center px-4 py-3 rounded-2xl hover:bg-white/10 transition-all text-indigo-100 mb-1 {{ request()->routeIs('kategori.*') ? 'bg-white/10 text-white border-l-4 border-indigo-400' : '' }}">
             <span class="mr-3">🏷️</span> Kategori Buku
@@ -25,9 +29,7 @@
         <a href="{{ route('user.index') }}" class="flex items-center px-4 py-3 rounded-2xl hover:bg-white/10 transition-all text-indigo-100 mb-1 {{ request()->routeIs('user.*') ? 'bg-white/10 text-white border-l-4 border-indigo-400' : '' }}">
             <span class="mr-3">👥</span> Manajemen Member
         </a>
-        <a href="{{ route('denda.index') }}" class="flex items-center px-4 py-3 rounded-2xl hover:bg-white/10 transition-all text-indigo-100 mb-1 {{ request()->routeIs('denda.*') ? 'bg-white/10 text-white border-l-4 border-indigo-400' : '' }}">
-            <span class="mr-3">📖</span> Denda 
-        </a>
+        
         @endif
     </div>
 
