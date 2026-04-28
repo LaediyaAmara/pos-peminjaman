@@ -11,7 +11,27 @@
     <div class="py-12 bg-gray-50">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
-            {{-- Tombol Kembali ke Dashboard --}}
+            {{-- 1. NOTIFIKASI DENDA (Hanya muncul jika ada denda belum lunas) --}}
+            @php
+                $dendaBelumLunas = $pinjamans->where('denda.StatusPembayaran', 'Belum Lunas');
+            @endphp
+
+            @if($dendaBelumLunas->count() > 0)
+                <div class="mb-6 p-4 bg-rose-50 border-l-4 border-rose-500 rounded-r-2xl shadow-sm">
+                    <div class="flex items-center">
+                        <span class="text-2xl mr-3">💸</span>
+                        <div>
+                            <h3 class="text-rose-800 font-black text-xs uppercase tracking-widest">Tagihan Denda</h3>
+                            <p class="text-rose-600 text-sm font-bold">
+                                Kamu memiliki {{ $dendaBelumLunas->count() }} denda yang belum lunas. Total: 
+                                <span class="underline">Rp{{ number_format($dendaBelumLunas->sum('denda.JumlahDenda')) }}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Tombol Kembali --}}
             <div class="mb-8">
                 <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-3 bg-white border border-gray-100 px-5 py-2.5 rounded-2xl shadow-sm hover:shadow-md transition-all group">
                     <span class="w-7 h-7 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all">
@@ -31,38 +51,57 @@
                                 <tr class="text-emerald-800 uppercase text-[10px] font-black tracking-[0.2em] border-b border-emerald-50">
                                     <th class="px-6 py-5">Buku</th>
                                     <th class="px-6 py-5">Waktu Pinjam</th>
-                                    <th class="px-6 py-5">Waktu Kembali</th>
+                                    <th class="px-6 py-5 text-center">Waktu Kembali</th>
                                     <th class="px-6 py-5 text-center">Status & Kondisi</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-50">
                                 @forelse($pinjamans as $pinjam)
                                 <tr class="hover:bg-emerald-50/30 transition-colors group">
+                                    {{-- Kolom 1: Buku --}}
                                     <td class="px-6 py-6">
                                         <div class="font-black text-emerald-950 text-sm leading-tight">{{ $pinjam->buku->Judul }}</div>
                                         <div class="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">Kategori: {{ $pinjam->buku->kategori->NamaKategori ?? 'Umum' }}</div>
                                     </td>
+
+                                    {{-- Kolom 2: Waktu Pinjam --}}
                                     <td class="px-6 py-6">
-                                        <div class="text-sm font-bold text-gray-800">{{ \Carbon\Carbon::parse($pinjam->TanggalPeminjaman)->format('d M Y') }}</div>
-                                        <div class="text-[10px] text-emerald-500 font-black italic">{{ \Carbon\Carbon::parse($pinjam->TanggalPeminjaman)->format('H:i') }} WIB</div>
+                                        @if($pinjam->StatusPeminjaman == 'Pending')
+                                            <span class="text-[10px] text-amber-500 font-bold italic bg-amber-50 px-2 py-1 rounded-lg">Menunggu Verifikasi...</span>
+                                        @else
+                                            <div class="text-sm font-bold text-gray-800">{{ \Carbon\Carbon::parse($pinjam->TanggalPeminjaman)->format('d M Y') }}</div>
+                                            <div class="text-[10px] text-emerald-500 font-black italic">{{ \Carbon\Carbon::parse($pinjam->TanggalPeminjaman)->format('H:i') }} WIB</div>
+                                        @endif
                                     </td>
-                                    <td class="px-6 py-6">
+
+                                    {{-- Kolom 3: Waktu Kembali / Deadline --}}
+                                    <td class="px-6 py-6 text-center">
                                         @if($pinjam->StatusPeminjaman == 'Kembali')
                                             <div class="text-sm font-bold text-emerald-600">{{ \Carbon\Carbon::parse($pinjam->TanggalPengembalian)->format('d M Y') }}</div>
                                             <div class="text-[10px] text-emerald-400 font-black italic">{{ \Carbon\Carbon::parse($pinjam->TanggalPengembalian)->format('H:i') }} WIB</div>
+                                        @elseif($pinjam->StatusPeminjaman == 'Pending')
+                                            <div class="flex flex-col items-center">
+                                                <span class="text-[10px] text-indigo-400 font-black uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">Menunggu Verifikasi</span>
+                                                <p class="text-[9px] text-gray-400 mt-1 italic">*Waktu pinjam belum berjalan</p>
+                                            </div>
+                                        @elseif($pinjam->StatusPeminjaman == 'Ditolak')
+                                            <span class="text-xs text-gray-300 font-bold uppercase italic">Pengajuan Ditolak</span>
                                         @else
                                             <div class="text-sm font-bold text-rose-600">{{ \Carbon\Carbon::parse($pinjam->TanggalPengembalian)->format('d M Y') }}</div>
                                             <div class="text-[10px] text-rose-400 font-black uppercase tracking-widest">Deadline</div>
                                         @endif
                                     </td>
+
+                                    {{-- Kolom 4: Status & Kondisi --}}
                                     <td class="px-6 py-6 text-center">
                                         <div class="flex flex-col items-center gap-2">
                                             <span class="px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] shadow-sm
-                                                {{ $pinjam->StatusPeminjaman == 'Dipinjam' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-emerald-600 text-white' }}">
+                                                {{ $pinjam->StatusPeminjaman == 'Dipinjam' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 
+                                                   ($pinjam->StatusPeminjaman == 'Pending' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 
+                                                   ($pinjam->StatusPeminjaman == 'Ditolak' ? 'bg-rose-100 text-rose-700 border border-rose-200' : 'bg-emerald-600 text-white')) }}">
                                                 {{ $pinjam->StatusPeminjaman }}
                                             </span>
                                             
-                                            {{-- Tambahan Kondisi Saat Dikembalikan --}}
                                             @if($pinjam->StatusPeminjaman == 'Kembali')
                                                 <span class="text-[10px] font-black uppercase {{ $pinjam->Kondisi == 'Baik' ? 'text-emerald-500' : ($pinjam->Kondisi == 'Rusak' ? 'text-amber-500' : 'text-rose-500') }}">
                                                     Kondisi: {{ $pinjam->Kondisi ?? 'Baik' }}
@@ -94,22 +133,3 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </x-app-layout>
-{{-- Letakkan di atas tabel pinjaman siswa --}}
-@php
-    $dendaBelumLunas = $pinjamans->where('denda.StatusPembayaran', 'Belum Lunas');
-@endphp
-
-@if($dendaBelumLunas->count() > 0)
-    <div class="mb-6 p-4 bg-rose-50 border-l-4 border-rose-500 rounded-r-2xl shadow-sm">
-        <div class="flex items-center">
-            <span class="text-2xl mr-3">💸</span>
-            <div>
-                <h3 class="text-rose-800 font-black text-xs uppercase tracking-widest">Tagihan Denda</h3>
-                <p class="text-rose-600 text-sm font-bold">
-                    Kamu memiliki {{ $dendaBelumLunas->count() }} denda yang belum lunas. Total: 
-                    <span class="underline">Rp{{ number_format($dendaBelumLunas->sum('denda.JumlahDenda')) }}</span>
-                </p>
-            </div>
-        </div>
-    </div>
-@endif

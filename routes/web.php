@@ -15,6 +15,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/manajemen-user/{id}/edit', [UserController::class, 'edit'])->name('user.edit');
     Route::put('/manajemen-user/{id}/update', [UserController::class, 'update'])->name('user.update');
     Route::delete('/manajemen-user/{id}', [UserController::class, 'destroy'])->name('user.destroy');
+    Route::post('/peminjaman/{id}/verifikasi', [PeminjamanController::class, 'verifikasi'])->name('peminjaman.verifikasi');
 });
 
 // Jika kamu menggunakan Resource Controller

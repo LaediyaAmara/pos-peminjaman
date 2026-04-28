@@ -49,13 +49,13 @@ class PeminjamanController extends Controller
             'BukuID' => $request->BukuID,
             'TanggalPeminjaman' => now(),
             'TanggalPengembalian' => now()->addDays(7),
-            'StatusPeminjaman' => 'Dipinjam',
+            'StatusPeminjaman' => 'Pending', // 
         ]);
 
         // 4. KURANGI STOK
         $buku->decrement('Stok');
 
-        return back()->with('success', 'Buku berhasil dipinjam! Sisa stok: ' . $buku->Stok);
+        return back()->with('success', 'Berhasil mengajukan pinjaman. Menunggu verifikasi petugas. Sisa stok: ' . $buku->Stok);
     }
 
     // Tampilan Admin: Daftar Semua Peminjaman
@@ -210,4 +210,31 @@ public function bayarDenda($id)
     return back()->with('success', 'Status denda berhasil diperbarui menjadi Lunas!');
 }
 
+public function verifikasi(Request $request, $id)
+{
+    $peminjaman = Peminjaman::findOrFail($id);
+    $buku = \App\Models\Buku::where('BukuID', $peminjaman->BukuID)->first();
+
+    if ($request->aksi == 'setuju') {
+        if (!$buku || $buku->Stok <= 0) {
+            return back()->with('error', 'Gagal! Stok buku tidak tersedia.');
+        }
+
+        // --- LOGIKA WAKTU BARU ---
+        $peminjaman->update([
+            'StatusPeminjaman' => 'Dipinjam',
+            'TanggalPeminjaman' => now(), // Set tanggal pinjam ke detik ini (saat disetujui)
+            'TanggalPengembalian' => now()->addDays(7), // Set deadline 7 hari ke depan dari hari ini
+        ]);
+
+        $buku->decrement('Stok');
+
+        return back()->with('success', 'Peminjaman disetujui! Masa pinjam 7 hari dimulai dari sekarang.');
+    } 
+    
+    if ($request->aksi == 'tolak') {
+        $peminjaman->update(['StatusPeminjaman' => 'Ditolak']);
+        return back()->with('success', 'Peminjaman telah ditolak.');
+    }
+}
 }
