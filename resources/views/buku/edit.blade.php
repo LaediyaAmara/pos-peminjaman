@@ -27,6 +27,17 @@
                             </div>
                         </div>
 
+ {{-- Kategori Buku (Dropdown baru yang sudah dirapikan) --}}
+                    <div>
+                        <x-input-label for="KategoriID" class="font-semibold" :value="__('Kategori Buku')" />
+                        <select name="KategoriID" id="KategoriID" class="block mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                            <option value="" disabled selected>-- Pilih Kategori --</option>
+                            @foreach($kategoris as $k)
+                                <option value="{{ $k->KategoriID }}">{{ $k->NamaKategori }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="TahunTerbit" :value="__('Tahun Terbit')" />

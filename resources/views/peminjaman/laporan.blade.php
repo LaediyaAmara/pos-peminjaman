@@ -1,29 +1,17 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-bold text-2xl text-indigo-900 leading-tight">📊 Laporan Peminjaman Buku</h2>
-            <button onclick="window.print()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all print:hidden flex items-center space-x-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                <span>Cetak Laporan</span>
-            </button>
+        <div class="flex items-center">
+            <h2 class="font-bold text-2xl text-indigo-900 leading-tight uppercase tracking-tight">
+                📊 Laporan Peminjaman Buku
+            </h2>
         </div>
     </x-slot>
 
-    <div class="py-12 bg-gray-50 print:bg-white print:py-0">
+    <div class="py-12 bg-gray-50">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
-            {{-- Header Khusus Saat Dicetak --}}
-            <div class="hidden print:block text-center mb-8 border-b-4 border-double border-black pb-6">
-                <h1 class="text-4xl font-black uppercase tracking-widest">LAPORAN PERPUSTAKAAN DIGITAL</h1>
-                <p class="text-lg font-semibold mt-2">Data Transaksi Peminjaman dan Pengembalian Buku</p>
-                <div class="flex justify-between mt-6 text-sm italic font-medium">
-                    <span>Dicetak oleh: {{ auth()->user()->NamaLengkap }}</span>
-                    <span>Tanggal Cetak: {{ now()->format('d F Y H:i') }}</span>
-                </div>
-            </div>
-
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-3xl border border-gray-100 print:shadow-none print:border-none">
-                <div class="p-8 print:p-0">
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-3xl border border-gray-100">
+                <div class="p-8">
                     <table class="w-full text-left border-collapse border border-gray-300">
                         <thead>
                             <tr class="bg-indigo-50 text-indigo-900 uppercase text-xs font-bold border-b-2 border-gray-300">
@@ -31,7 +19,7 @@
                                 <th class="border border-gray-300 px-4 py-4">Informasi Peminjam</th>
                                 <th class="border border-gray-300 px-4 py-4">Detail Buku</th>
                                 <th class="border border-gray-300 px-4 py-4 text-center">Tgl Pinjam</th>
-                                <th class="border border-gray-300 px-4 py-4 text-center">Tgl Kembali</th> {{-- Ubah Header agar lebih umum --}}
+                                <th class="border border-gray-300 px-4 py-4 text-center">Tgl Kembali</th>
                                 <th class="border border-gray-300 px-4 py-4 text-center">Status & Kondisi</th>
                             </tr>
                         </thead>
@@ -51,17 +39,20 @@
                                     <div class="text-[10px] text-gray-400 font-medium italic">{{ \Carbon\Carbon::parse($p->TanggalPeminjaman)->format('H:i') }} WIB</div>
                                 </td>
                                 <td class="border border-gray-300 px-4 py-4 text-center whitespace-nowrap">
-                                    @if($p->StatusPeminjaman == 'Kembali')
-                                        {{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('d/m/Y') }}
-                                        <div class="text-[10px] text-emerald-500 font-medium italic">{{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('H:i') }} WIB</div>
+                                    @if($p->StatusPeminjaman == 'Kembali' && $p->TanggalPengembalian)
+                                        <div class="font-bold text-emerald-600">
+                                            {{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('d/m/Y') }}
+                                        </div>
+                                        <div class="text-[10px] text-emerald-500 font-medium italic">
+                                            {{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('H:i') }} WIB
+                                        </div>
                                     @else
-                                        {{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('d/m/Y') }}
-                                        <div class="text-[10px] text-amber-500 font-bold uppercase tracking-tighter">Estimasi</div>
+                                        <span class="text-gray-400 italic">Belum Kembali</span>
                                     @endif
                                 </td>
                                 <td class="border border-gray-300 px-4 py-4 text-center">
                                     @php
-                                        $deadline = \Carbon\Carbon::parse($p->TanggalPengembalian);
+                                        $deadline = \Carbon\Carbon::parse($p->TanggalPengembalian); 
                                         $isTerlambat = now()->gt($deadline) && $p->StatusPeminjaman == 'Dipinjam';
                                     @endphp
 
@@ -75,7 +66,6 @@
                                             </span>
                                         @endif
 
-                                        {{-- Tambahan Kondisi Barang --}}
                                         @if($p->StatusPeminjaman == 'Kembali')
                                             <span class="text-[10px] font-bold uppercase {{ $p->Kondisi == 'Baik' ? 'text-emerald-600' : ($p->Kondisi == 'Rusak' ? 'text-amber-600' : 'text-rose-600') }}">
                                                 Kondisi: {{ $p->Kondisi }}
@@ -93,32 +83,8 @@
                             @endforelse
                         </tbody>
                     </table>
-
-                    {{-- Footer Tanda Tangan (Hanya muncul saat diprint) --}}
-                    <div class="hidden print:grid grid-cols-2 mt-16 text-gray-800">
-                        <div></div>
-                        <div class="text-center">
-                            <p class="mb-1 text-sm">Tarogong Kaler, {{ now()->format('d F Y') }}</p>
-                            <p class="font-semibold">Kepala Perpustakaan,</p>
-                            <div class="h-24"></div> {{-- Ruang untuk tanda tangan --}}
-                            <p class="font-bold underline text-lg">( {{ auth()->user()->NamaLengkap }} )</p>
-                            <p class="text-xs uppercase tracking-widest text-gray-500">Petugas Perpustakaan Digital</p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <style>
-        @media print {
-            nav, button, header, .header-shadow { display: none !important; }
-            body, .py-12, .bg-gray-50 { background: white !important; padding-top: 0 !important; }
-            .shadow-xl { box-shadow: none !important; }
-            table { width: 100% !important; border: 2px solid black !important; color: black !important; }
-            th { background-color: #f3f4f6 !important; color: black !important; border: 1px solid black !important; }
-            td { border: 1px solid black !important; color: black !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        }
-    </style>
 </x-app-layout>

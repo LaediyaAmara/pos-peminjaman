@@ -41,4 +41,9 @@ protected $casts = [
     {
         return $this->belongsTo(Buku::class, 'BukuID');
     }
+    public function denda()
+{
+    return $this->hasOne(Denda::class, 'PeminjamanID', 'PeminjamanID');
+}
+
 }

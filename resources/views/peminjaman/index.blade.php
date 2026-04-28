@@ -69,16 +69,46 @@
                                         <div class="text-[11px] text-gray-700 font-bold">{{ \Carbon\Carbon::parse($p->TanggalPeminjaman)->format('d M Y') }}</div>
                                         <div class="text-[10px] text-indigo-400 font-medium italic">{{ \Carbon\Carbon::parse($p->TanggalPeminjaman)->format('H:i') }} WIB</div>
                                     </td>
-                                    <td class="px-4 py-6 text-center whitespace-nowrap">
-                                        @if($p->StatusPeminjaman == 'Kembali')
-                                            <div class="text-[11px] text-emerald-600 font-bold">{{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('d M Y') }}</div>
-                                            <div class="text-[10px] text-emerald-400 font-medium italic">{{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('H:i') }} WIB</div>
-                                        @else
-                                            <span class="text-[9px] text-amber-500 font-black px-2 py-1 bg-amber-50 rounded-lg border border-amber-100 uppercase tracking-widest">
-                                                Menunggu
-                                            </span>
-                                        @endif
-                                    </td>
+<td class="px-4 py-6 text-center whitespace-nowrap">
+    @if($p->StatusPeminjaman == 'Kembali')
+        {{-- 1. TAMPILAN JIKA SUDAH KEMBALI --}}
+        <div class="text-[11px] text-emerald-600 font-bold">
+            {{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('d M Y') }}
+        </div>
+        <div class="text-[10px] text-emerald-400 font-medium italic">
+            {{ \Carbon\Carbon::parse($p->TanggalPengembalian)->format('H:i') }} WIB
+        </div>
+    @else
+        {{-- 2. LOGIKA DINAMIS UNTUK DEADLINE & KETERLAMBATAN --}}
+        @php
+            $deadline = \Carbon\Carbon::parse($p->TanggalPengembalian);
+            $hariIni = now();
+            $selisihHari = $hariIni->diffInDays($deadline, false); // false agar menghasilkan angka negatif jika lewat
+        @endphp
+
+        @if($hariIni->gt($deadline))
+            {{-- TAMPILAN JIKA TELAT --}}
+            <div class="flex flex-col items-center">
+                <span class="text-[9px] text-rose-600 font-black px-2 py-1 bg-rose-50 rounded-lg border border-rose-100 uppercase tracking-widest animate-pulse">
+                    ⚠️ Telat Pengembalian
+                </span>
+                <div class="text-[9px] text-rose-400 mt-1 font-bold italic">
+                    Lewat {{ abs($selisihHari) }} Hari
+                </div>
+            </div>
+        @else
+            {{-- TAMPILAN INFORMASI DEADLINE (BELUM TELAT) --}}
+            <div class="flex flex-col items-center">
+                <span class="text-[9px] text-amber-500 font-black px-2 py-1 bg-amber-50 rounded-lg border border-amber-100 uppercase tracking-widest">
+                    Batas: {{ $deadline->format('d M Y') }}
+                </span>
+                <div class="text-[10px] {{ $selisihHari <= 1 ? 'text-rose-500 animate-bounce' : 'text-gray-400' }} mt-1 font-medium italic">
+                    {{ $selisihHari == 0 ? 'Terakhir Hari Ini!' : $selisihHari . ' Hari lagi' }}
+                </div>
+            </div>
+        @endif
+    @endif
+</td>
                                     <td class="px-4 py-6 text-center">
                                         <div class="flex flex-col items-center gap-1.5">
                                             <span class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-sm

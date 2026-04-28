@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Peminjaman; 
 use App\Models\Buku;
-use App\Models\Kategori; // Sesuaikan dengan nama Model Kategori kamu
 use App\Models\KategoriBuku;
+use App\Models\Denda; // Pastikan Model Denda sudah dibuat
 use Illuminate\Support\Facades\Auth;
 
 class PeminjamanController extends Controller
@@ -43,7 +43,7 @@ class PeminjamanController extends Controller
             return back()->with('error', 'Maaf, stok buku "' . $buku->Judul . '" sedang habis!');
         }
 
-        // 3. PROSES SIMPAN
+        // 3. PROSES SIMPAN (Default Pinjam 7 Hari)
         Peminjaman::create([
             'UserID' => $userID,
             'BukuID' => $request->BukuID,
@@ -63,7 +63,7 @@ class PeminjamanController extends Controller
     {
         $search = $request->input('search');
         
-        $peminjamans = Peminjaman::with(['user', 'buku'])
+        $peminjamans = Peminjaman::with(['user', 'buku', 'denda'])
             ->when($search, function($query, $search) {
                 $query->whereHas('user', function($q) use ($search) {
                     $q->where('NamaLengkap', 'like', "%{$search}%");
@@ -77,57 +77,90 @@ class PeminjamanController extends Controller
         return view('peminjaman.index', compact('peminjamans'));
     }
 
-    // Proses Mengembalikan Buku
+    /**
+     * FUNGSI KEMBALIKAN (SUDAH DIPERBAIKI & DIGABUNG DENGAN DENDA)
+     */
     public function kembalikan(Request $request, $id)
     {
         $peminjaman = Peminjaman::findOrFail($id);
-        $kondisi = $request->input('kondisi'); 
+        $hariIni = now();
+        // Deadline adalah tanggal pengembalian yang diset saat awal pinjam
+        $deadline = \Carbon\Carbon::parse($peminjaman->TanggalPengembalian);
+        
+        $totalDenda = 0;
+        $keterangan = [];
 
-        // 1. Update status & kondisi
+        // --- LOGIKA 1: Denda Keterlambatan (2000 per hari) ---
+        if ($hariIni->gt($deadline)) {
+            $selisihHari = $hariIni->diffInDays($deadline);
+            $dendaTelat = $selisihHari * 2000; 
+            $totalDenda += $dendaTelat;
+            $keterangan[] = "Telat $selisihHari hari (Rp " . number_format($dendaTelat) . ")";
+        }
+
+        // --- LOGIKA 2: Denda Kondisi ---
+        if ($request->kondisi == 'Rusak') {
+            $totalDenda += 20000; 
+            $keterangan[] = "Buku Rusak (Rp 20.000)";
+        } elseif ($request->kondisi == 'Hilang') {
+            $totalDenda += 50000; 
+            $keterangan[] = "Buku Hilang (Rp 50.000)";
+        }
+
+        // --- 1. UPDATE STATUS PEMINJAMAN ---
         $peminjaman->update([
+            'TanggalPengembalian' => $hariIni, // Tanggal kembali asli
             'StatusPeminjaman' => 'Kembali',
-            'Kondisi' => $kondisi,
-            'TanggalPengembalian' => now()
+            'Kondisi' => $request->kondisi
         ]);
 
-        // 2. Update Stok (Hanya bertambah jika tidak Hilang)
-        if ($kondisi != 'Hilang') {
+        // --- 2. UPDATE STOK BUKU (Hanya bertambah jika tidak Hilang) ---
+        if ($request->kondisi != 'Hilang') {
             Buku::where('BukuID', $peminjaman->BukuID)->increment('Stok');
         }
 
-        return back()->with('success', "Buku dikembalikan dengan kondisi: $kondisi");
+        // --- 3. SIMPAN KE TABEL DENDA (JIKA ADA) ---
+        if ($totalDenda > 0) {
+            Denda::create([
+                'PeminjamanID' => $peminjaman->PeminjamanID,
+                'JumlahDenda' => $totalDenda,
+                'Keterangan' => implode(", ", $keterangan),
+                'StatusPembayaran' => 'Belum Lunas'
+            ]);
+        }
+
+        $msg = "Buku dikembalikan. Kondisi: $request->kondisi.";
+        if ($totalDenda > 0) $msg .= " Denda Otomatis: Rp " . number_format($totalDenda);
+
+        return back()->with('success', $msg);
     }
 
-    // Fungsi untuk Halaman Jelajah Buku Siswa (Peminjam)
-   public function pinjam(Request $request, $kategori_id = null)
-{
-    // 1. Tangkap input search dari user
-    $search = $request->input('search');
+    // Fungsi untuk Halaman Jelajah Buku Siswa
+    public function pinjam(Request $request, $kategori_id = null)
+    {
+        $search = $request->input('search');
+        $query = Buku::with('kategori');
 
-    // 2. Query dasar buku (beserta relasi kategori)
-    $query = Buku::with('kategori');
+        if ($kategori_id) {
+            $query->where('KategoriID', $kategori_id);
+        }
 
-    // 3. Logika Filter Kategori (Jika ada kategori yang diklik)
-    if ($kategori_id) {
-        $query->where('KategoriID', $kategori_id);
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('Judul', 'LIKE', "%{$search}%")
+                  ->orWhere('Penulis', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $bukus = $query->latest()->get();
+        $kategoris = KategoriBuku::all();
+
+        return view('peminjam.pinjam', compact('bukus', 'kategoris', 'kategori_id'));
     }
 
-    // 4. LOGIKA PENCARIAN (Tambahan agar search berfungsi)
-    if ($search) {
-        $query->where(function($q) use ($search) {
-            $q->where('Judul', 'LIKE', "%{$search}%")
-              ->orWhere('Penulis', 'LIKE', "%{$search}%");
-        });
-    }
-
-    $bukus = $query->latest()->get();
-    $kategoris = KategoriBuku::all();
-
-    return view('peminjam.pinjam', compact('bukus', 'kategoris', 'kategori_id'));
-}
     public function laporan()
     {
-        $peminjamans = Peminjaman::with(['user', 'buku'])->latest()->get();
+        $peminjamans = Peminjaman::with(['user', 'buku', 'denda'])->latest()->get();
         return view('peminjaman.laporan', compact('peminjamans'));
     }
 }
