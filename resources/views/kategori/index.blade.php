@@ -8,12 +8,12 @@
                 <h2 class="font-bold text-2xl text-amber-800 leading-tight">🏷️ Kelola Kategori Buku</h2>
             </div>
             
-            <button onclick="openAddModal()" class="inline-flex items-center px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl shadow-lg shadow-amber-100 transition-all">
-                + Tambah Kategori
-            </button>
+            
         </div>
     </x-slot>
-
+<button onclick="openAddModal()" class="inline-flex items-center px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl shadow-lg shadow-amber-100 transition-all">
+                + Tambah Kategori
+            </button>
     <div class="py-12 bg-gray-50">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             {{-- Notifikasi Sukses --}}

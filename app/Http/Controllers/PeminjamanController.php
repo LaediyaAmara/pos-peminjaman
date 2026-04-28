@@ -158,11 +158,24 @@ class PeminjamanController extends Controller
         return view('peminjam.pinjam', compact('bukus', 'kategoris', 'kategori_id'));
     }
 
-    public function laporan()
-    {
-        $peminjamans = Peminjaman::with(['user', 'buku', 'denda'])->latest()->get();
-        return view('peminjaman.laporan', compact('peminjamans'));
+   public function laporan(Request $request)
+{
+    $query = Peminjaman::with(['user', 'buku', 'denda']);
+
+    // Filter berdasarkan Tanggal Peminjaman
+    if ($request->tgl_mulai && $request->tgl_selesai) {
+        $query->whereBetween('TanggalPeminjaman', [$request->tgl_mulai, $request->tgl_selesai]);
     }
+
+    // Filter berdasarkan Status
+    if ($request->status) {
+        $query->where('StatusPeminjaman', $request->status);
+    }
+
+    $peminjamans = $query->latest()->get();
+
+    return view('peminjaman.laporan', compact('peminjamans'));
+}
 
 // Tampilan Daftar Denda untuk Admin
 public function daftarDenda()
