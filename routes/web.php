@@ -71,3 +71,13 @@ Route::put('/peminjaman/{id}/kembalikan', [PeminjamanController::class, 'kembali
 Route::get('/laporan-peminjaman', [PeminjamanController::class, 'laporan'])
     ->name('peminjaman.laporan')
     ->middleware(['auth']);
+   Route::middleware(['auth'])->group(function () {
+    // Akses Khusus Admin & Petugas (Kelola Denda)
+    Route::middleware(['role:admin,petugas'])->group(function () {
+        Route::get('/denda', [PeminjamanController::class, 'daftarDenda'])->name('denda.index');
+        Route::put('/denda/{id}/bayar', [PeminjamanController::class, 'bayarDenda'])->name('denda.bayar');
+    });
+
+    // Akses Peminjam (Hanya melihat denda miliknya sendiri di Riwayat)
+    // Ini biasanya sudah tercover di fungsi index peminjam yang menampilkan relasi denda
+});

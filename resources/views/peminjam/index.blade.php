@@ -94,3 +94,22 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </x-app-layout>
+{{-- Letakkan di atas tabel pinjaman siswa --}}
+@php
+    $dendaBelumLunas = $pinjamans->where('denda.StatusPembayaran', 'Belum Lunas');
+@endphp
+
+@if($dendaBelumLunas->count() > 0)
+    <div class="mb-6 p-4 bg-rose-50 border-l-4 border-rose-500 rounded-r-2xl shadow-sm">
+        <div class="flex items-center">
+            <span class="text-2xl mr-3">💸</span>
+            <div>
+                <h3 class="text-rose-800 font-black text-xs uppercase tracking-widest">Tagihan Denda</h3>
+                <p class="text-rose-600 text-sm font-bold">
+                    Kamu memiliki {{ $dendaBelumLunas->count() }} denda yang belum lunas. Total: 
+                    <span class="underline">Rp{{ number_format($dendaBelumLunas->sum('denda.JumlahDenda')) }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+@endif

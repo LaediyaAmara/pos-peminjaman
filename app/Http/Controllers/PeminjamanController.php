@@ -163,4 +163,29 @@ class PeminjamanController extends Controller
         $peminjamans = Peminjaman::with(['user', 'buku', 'denda'])->latest()->get();
         return view('peminjaman.laporan', compact('peminjamans'));
     }
+
+// Tampilan Daftar Denda untuk Admin
+public function daftarDenda()
+{
+    // Cek keamanan tambahan
+    if (!in_array(auth()->user()->role, ['admin', 'petugas'])) {
+        abort(403, 'Anda tidak memiliki akses ke halaman ini.');
+    }
+
+    $dendas = Denda::with(['peminjaman.user', 'peminjaman.buku'])
+                ->latest()
+                ->get();
+
+    return view('peminjaman.denda', compact('dendas'));
+}
+
+// Fungsi untuk Update Status Pembayaran (Lunas/Belum Lunas)
+public function bayarDenda($id)
+{
+    $denda = Denda::findOrFail($id);
+    $denda->update(['StatusPembayaran' => 'Lunas']);
+
+    return back()->with('success', 'Status denda berhasil diperbarui menjadi Lunas!');
+}
+
 }

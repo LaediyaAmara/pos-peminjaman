@@ -12,7 +12,7 @@
     <div>
         <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-4 mb-3">Manajemen Data</p>
         <a href="{{ route('buku.index') }}" class="flex items-center px-4 py-3 rounded-2xl hover:bg-white/10 transition-all text-indigo-100 mb-1 {{ request()->routeIs('buku.*') ? 'bg-white/10 text-white border-l-4 border-indigo-400' : '' }}">
-            <span class="mr-3">📖</span> Koleksi Buku
+            <span class="mr-3">📖</span> Koleksi Buku 
         </a>
         <a href="{{ route('peminjaman.index') }}" class="flex items-center px-4 py-3 rounded-2xl hover:bg-white/10 transition-all text-indigo-100 mb-1 {{ request()->routeIs('peminjaman.index') ? 'bg-white/10 text-white border-l-4 border-indigo-400' : '' }}">
             <span class="mr-3">🔄</span> Log Peminjaman
@@ -24,6 +24,9 @@
         </a>
         <a href="{{ route('user.index') }}" class="flex items-center px-4 py-3 rounded-2xl hover:bg-white/10 transition-all text-indigo-100 mb-1 {{ request()->routeIs('user.*') ? 'bg-white/10 text-white border-l-4 border-indigo-400' : '' }}">
             <span class="mr-3">👥</span> Manajemen Member
+        </a>
+        <a href="{{ route('denda.index') }}" class="flex items-center px-4 py-3 rounded-2xl hover:bg-white/10 transition-all text-indigo-100 mb-1 {{ request()->routeIs('denda.*') ? 'bg-white/10 text-white border-l-4 border-indigo-400' : '' }}">
+            <span class="mr-3">📖</span> Denda 
         </a>
         @endif
     </div>

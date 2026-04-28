@@ -1,84 +1,131 @@
-    <nav x-data="{ open: false }" class="bg-white border-b border-indigo-100 shadow-sm">
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex justify-between items-center py-2">
+            <div>
+                <h2 class="font-black text-3xl text-emerald-950 tracking-tight leading-tight">
+                    📚 Pinjaman <span class="text-emerald-600 underline decoration-emerald-200">Saya</span>
+                </h2>
+                <p class="text-xs text-gray-500 font-bold uppercase tracking-[0.2em] mt-1">Riwayat & Koleksi Buku Aktif</p>
+            </div>
+            <a href="{{ route('peminjam.pinjam') }}" class="group flex items-center gap-3 px-6 py-3 bg-emerald-600 text-white rounded-[1.5rem] text-xs font-black uppercase tracking-widest shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95">
+                <span class="text-lg group-hover:rotate-90 transition-transform">+</span>
+                Pinjam Buku
+            </a>
+        </div>
+    </x-slot>
+
+    <div class="py-10 bg-gray-50/50 min-h-screen">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="shrink-0 flex items-center">
-                        <a href="{{ route('dashboard') }}">
-                            <x-application-logo class="block h-9 w-auto fill-current text-indigo-600" />
-                        </a>
-                    </div>
+            
+            {{-- Alert Denda dengan Desain Lebih Modern --}}
+            @php
+                // Menggunakan flatMap karena denda biasanya relasi one-to-one atau one-to-many
+                $totalDenda = $pinjamans->sum(fn($p) => $p->denda && $p->denda->StatusPembayaran == 'Belum Lunas' ? $p->denda->JumlahDenda : 0);
+                $jumlahDenda = $pinjamans->filter(fn($p) => $p->denda && $p->denda->StatusPembayaran == 'Belum Lunas')->count();
+            @endphp
 
-                    <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                            {{ __('Dashboard') }}
-                        </x-nav-link>
-                        {{-- Link Kelola Buku sudah dihapus dari sini agar tidak boros tampilan --}}
+            @if($jumlahDenda > 0)
+                <div class="mb-8 bg-white border-l-[6px] border-rose-500 p-6 rounded-[2rem] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-2xl mr-4">
+                            💸
+                        </div>
+                        <div>
+                            <h3 class="text-rose-900 font-black text-sm uppercase tracking-widest">Tagihan Denda Terdeteksi</h3>
+                            <p class="text-gray-500 text-xs font-bold mt-0.5">Segera lakukan pelunasan ke petugas perpustakaan.</p>
+                        </div>
+                    </div>
+                    <div class="bg-rose-50 px-6 py-3 rounded-2xl border border-rose-100 text-center">
+                        <span class="block text-[10px] font-black text-rose-400 uppercase tracking-tighter">Total Tagihan</span>
+                        <span class="text-xl font-black text-rose-600 italic">Rp{{ number_format($totalDenda, 0, ',', '.') }}</span>
                     </div>
                 </div>
+            @endif
 
-                <div class="hidden sm:flex sm:items-center sm:ms-6">
-                    <x-dropdown align="right" width="48">
-                        <x-slot name="trigger">
-                            <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-indigo-600 focus:outline-none transition ease-in-out duration-150">
-                                <div class="font-bold">{{ Auth::user()->NamaLengkap }}</div>
+            {{-- Navigasi Beranda --}}
+            <div class="mb-6">
+                <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-3 text-gray-400 hover:text-emerald-600 transition-colors group">
+                    <span class="w-8 h-8 bg-white rounded-xl shadow-sm flex items-center justify-center group-hover:bg-emerald-50 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    </span>
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em]">Kembali ke Dashboard</span>
+                </a>
+            </div>
 
-                                <div class="ms-1">
-                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </button>
-                        </x-slot>
-
-                        <x-slot name="content">
-                            <x-dropdown-link :href="route('profile.edit')">
-                                {{ __('Profile') }}
-                            </x-dropdown-link>
-
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <x-dropdown-link :href="route('logout')"
-                                        onclick="event.preventDefault();
-                                                    this.closest('form').submit();">
-                                    {{ __('Log Out') }}
-                                </x-dropdown-link>
-                            </form>
-                        </x-slot>
-                    </x-dropdown>
-                </div>
-
-                <div class="-me-2 flex items-center sm:hidden">
-                    <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 focus:outline-none transition duration-150 ease-in-out">
-                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                            <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                            <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+            {{-- Table Card --}}
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-[3rem] border border-gray-100">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50/50 text-emerald-900 uppercase text-[10px] font-black tracking-[0.2em] border-b border-gray-100">
+                                <th class="px-8 py-6">Detail Buku</th>
+                                <th class="px-8 py-6">Peminjaman</th>
+                                <th class="px-8 py-6">Pengembalian</th>
+                                <th class="px-8 py-6 text-center">Status & Kondisi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            @forelse($pinjamans as $pinjam)
+                            <tr class="hover:bg-emerald-50/20 transition-colors group">
+                                <td class="px-8 py-7">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center font-black">
+                                            {{ substr($pinjam->buku->Judul, 0, 1) }}
+                                        </div>
+                                        <div>
+                                            <div class="font-black text-emerald-950 text-sm leading-tight group-hover:text-emerald-600 transition-colors">{{ $pinjam->buku->Judul }}</div>
+                                            <div class="inline-block px-2 py-0.5 bg-gray-100 text-gray-400 text-[9px] font-black mt-1 uppercase rounded-md">
+                                                {{ $pinjam->buku->kategori->NamaKategori ?? 'Umum' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-8 py-7">
+                                    <div class="text-sm font-bold text-gray-800 tracking-tight">{{ \Carbon\Carbon::parse($pinjam->TanggalPeminjaman)->translatedFormat('d M Y') }}</div>
+                                    <div class="text-[10px] text-emerald-500 font-black italic mt-1">{{ \Carbon\Carbon::parse($pinjam->TanggalPeminjaman)->format('H:i') }} WIB</div>
+                                </td>
+                                <td class="px-8 py-7">
+                                    @if($pinjam->StatusPeminjaman == 'Kembali')
+                                        <div class="text-sm font-bold text-emerald-600 tracking-tight">{{ \Carbon\Carbon::parse($pinjam->TanggalPengembalian)->translatedFormat('d M Y') }}</div>
+                                        <div class="text-[10px] text-emerald-400 font-black italic mt-1 leading-none italic">Selesai</div>
+                                    @else
+                                        <div class="text-sm font-bold text-rose-600 tracking-tight">{{ \Carbon\Carbon::parse($pinjam->TanggalPengembalian)->translatedFormat('d M Y') }}</div>
+                                        <div class="text-[9px] font-black text-rose-400 uppercase tracking-widest mt-1">⚠️ Jatuh Tempo</div>
+                                    @endif
+                                </td>
+                                <td class="px-8 py-7">
+                                    <div class="flex flex-col items-center gap-2">
+                                        <span class="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest
+                                            {{ $pinjam->StatusPeminjaman == 'Dipinjam' ? 'bg-amber-100 text-amber-600 border border-amber-200' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' }}">
+                                            {{ $pinjam->StatusPeminjaman }}
+                                        </span>
+                                        
+                                        @if($pinjam->StatusPeminjaman == 'Kembali')
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="w-1.5 h-1.5 rounded-full {{ $pinjam->Kondisi == 'Baik' ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
+                                                <span class="text-[10px] font-bold text-gray-400 uppercase">
+                                                    {{ $pinjam->Kondisi ?? 'Baik' }}
+                                                </span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="4" class="px-8 py-32 text-center">
+                                    <div class="flex flex-col items-center">
+                                        <span class="text-5xl grayscale opacity-30 mb-4">📖</span>
+                                        <h4 class="text-gray-400 font-black uppercase tracking-[0.3em] text-xs">Rak Pinjaman Kosong</h4>
+                                        <p class="text-gray-300 text-[10px] mt-2 font-bold italic">Mulai jelajahi ilmu dengan meminjam buku pertama kamu!</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-
-        <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-            <div class="pt-2 pb-3 space-y-1">
-                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                    {{ __('Dashboard') }}
-                </x-responsive-nav-link>
-            </div>
-
-            <div class="pt-4 pb-1 border-t border-gray-200">
-                <div class="px-4 text-indigo-700 font-bold">
-                    {{ Auth::user()->NamaLengkap }}
-                </div>
-                <div class="mt-3 space-y-1">
-                    <x-responsive-nav-link :href="route('profile.edit')"> {{ __('Profile') }} </x-responsive-nav-link>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <x-responsive-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">
-                            {{ __('Log Out') }}
-             </x-responsive-nav-link>
-    
-        </form>
-        </div>
-        </div>
-        </div>
-        </nav>
+    </div>
+</x-app-layout>
